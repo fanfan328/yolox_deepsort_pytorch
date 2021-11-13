@@ -1,6 +1,10 @@
+import sys
+from os import path
 from .deep_sort import DeepSort
+
 __all__ = ['DeepSort', 'build_tracker']
 
+sys.path.append(path.dirname(path.abspath(__file__)))
 
 def build_tracker(cfg, use_cuda):
     return DeepSort(model_path=cfg.DEEPSORT.REID_CKPT, 

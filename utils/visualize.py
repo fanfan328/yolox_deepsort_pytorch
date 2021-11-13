@@ -37,7 +37,7 @@ def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=None):
 
 
 
-def vis_track(img, boxes):
+def vis_track(img, boxes, scores):
     
     for i in range(len(boxes)):
         box = boxes[i]
@@ -48,9 +48,11 @@ def vis_track(img, boxes):
         y1 = int(box[3])
 
         id = box[4]
+        score = scores[i]
         color_ = _COLORS[id%_COLORS.shape[0]]
         color = (color_ * 255).astype(np.uint8).tolist()
-        text = '%d'%(id)
+        # text = '%d'%(id)
+        text = '{}:{:.1f}%'.format(id, score * 100)
         txt_color = (255, 255, 255)
         font = cv2.FONT_HERSHEY_SIMPLEX
 

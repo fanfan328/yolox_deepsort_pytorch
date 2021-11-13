@@ -68,10 +68,9 @@ class Predictor(object):
                 outputs, self.num_classes, self.confthre,
                 self.nmsthre, class_agnostic=True
             )[0].cpu().numpy()
-            logger.info("Infer time: {:.4f}s".format(time.time() - t0))
+            # logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         
         # After Detection, Send it into visual function
-        bboxes = outputs[:, 0:4]
 
         # print(outputs)
         img_info['boxes'] = outputs[:, 0:4]/ratio
@@ -82,6 +81,7 @@ class Predictor(object):
         # print(f"Boxes = {info['boxes']} Scores = {info['scores']} Conf = {conf}")
         if flag_vis:
             img_info['visual'] = vis(img_info['raw_img'], img_info['boxes'], img_info['scores'], img_info['cls_id'], cls_conf, COCO_CLASSES)
+            logger.success("Inference Success")
         return img_info
         # return outputs, img_info
 
@@ -91,4 +91,4 @@ if __name__=='__main__':
     out = detector.detect(img)
     cv2.imshow('demo', out['visual'])
     cv2.waitKey(0)
-    print(out)
+    # print(out)
