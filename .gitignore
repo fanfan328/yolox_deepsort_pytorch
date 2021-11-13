@@ -42,4 +42,6 @@ Thumbs.db
 *.mp4
 *.jpg
 *.pyc
-__pycache__
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
