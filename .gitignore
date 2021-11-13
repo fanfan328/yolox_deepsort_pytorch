@@ -42,3 +42,4 @@ Thumbs.db
 *.mp4
 *.jpg
 *.pyc
+__pycache__
