@@ -148,7 +148,7 @@ def track_video(file, model='yolox-s', ckpt='yolox_s.pth', filter_class=None):
       cv2.imwrite(os.path.join(save_folder,'test/'+str(counter)+'.jpg'), frame) 
       vid_writer.write(frame) #Gak bisa write ?? 
       counter+=1
-      if counter%9==0 :
+      if counter%10==0 :
         print(f"Progress = {counter}/{total} - {counter/total*100:.2f}% - {time.time() - start_process_time:.2f}s")
       ch = cv2.waitKey(1)
       if ch == 27 or ch == ord("q") or ch == ord("Q"):

@@ -1,46 +1,102 @@
-from PyQt5.QtCore import QDir, Qt, QUrl
+from PyQt5.QtCore import QDir, Qt, QUrl, QTimer
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget, QComboBox)
-from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction
+from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction, QProgressBar, QLabel, QMessageBox
 from PyQt5.QtGui import QIcon
+from random import randint
 
 import sys
 import os
 #import videoplayer
+Stylesheet = '''
+#StyleProgressBar {
+    text-align: center;
+    border-radius: 4px;
+}
+#StyleProgressBar::chunk {
+    background-color: #ACf49C;
+}
+
+#StyleBtn {
+    border-radius: 4px;
+    background-color: #2196F3;
+    font-size: 18px;
+}
+
+#StyleBtn::hover {
+  background-color: white; 
+  color: black;
+  border: 2px solid #2196F3;
+}
+
+#StyleCombo {font-size: 18px;}
+
+#StyleLab{font-size: 12pt;}
+'''
+class ProgressBar(QProgressBar):
+    def __init__(self, *args, **kwargs):
+        super(ProgressBar, self).__init__(*args, **kwargs)
+        self.setValue(0)
+
+    def onTimeout(self):
+        if self.value() >= 100:
+            self.timer.stop()
+            self.timer.deleteLater()
+            del self.timer
+            return
+        self.setValue(self.value() + 1)
+    
+    def startCounting(self):
+        if self.minimum() != self.maximum():
+            self.timer = QTimer(self, timeout=self.onTimeout)
+            self.timer.start(randint(1, 3) * 1000)
 
 class VideoWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(VideoWindow, self).__init__(parent)
-        self.setWindowTitle("PyQt Video Player Widget Example - pythonprogramminglanguage.com")
-
+        self.setWindowTitle("Highlighting Basketball Player")
+        
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-
         videoWidget = QVideoWidget()
 
-        openButton = QPushButton("Open Video")
-        openButton.setToolTip("Open Video File")
-        openButton.setStatusTip("Open Video File")
-        openButton.setFixedHeight(25)
-        openButton.setFixedWidth(100)
-        openButton.clicked.connect(self.openF)
+        self.openButton = QPushButton("Open Video")
+        self.openButton.setObjectName("StyleBtn")
+        self.openButton.setToolTip("Choose the Video")
+        self.openButton.setStatusTip("Open Video")
+        self.openButton.setFixedHeight(40)
+        self.openButton.setFixedWidth(120)
+        self.openButton.clicked.connect(self.openF)
 
-        cropButton = QPushButton("Crop Video on Specified Person")
-        cropButton.setFixedHeight(25)
-        cropButton.setFixedWidth(250)
-        cropButton.clicked.connect(self.crop)
+        self.cropButton = QPushButton("Crop Video on Specified Person")
+        self.cropButton.setObjectName("StyleBtn")
+        self.cropButton.setFixedHeight(40)
+        self.cropButton.setFixedWidth(280)
+        self.cropButton.clicked.connect(self.crop)
 
         self.combo = QComboBox()
-#        self.combo.setGeometry(200,150,150,30)
+        self.combo.setObjectName("StyleCombo")
         self.combo.addItem("person1")
         self.combo.addItem("person2")
         self.combo.addItem("person3")
+        self.combo.setFixedHeight(40)
+        # cropButton.setFixedWidth(280)
 
-#        font = QFont('Arial',15)
-#        self.combo.setFont(font)
+        #font = QFont('Arial',15)
+        #self.combo.setFont(font)
 
-        self.playButton = QPushButton()
+        self.processButton = QPushButton("Process Video")
+        self.processButton.setToolTip("Process Video Video")
+        self.processButton.setStatusTip("Process Video")
+        self.processButton.setObjectName("StyleBtn")
+        self.processButton.setFixedHeight(40)
+        self.processButton.setFixedWidth(120)
+        self.processButton.clicked.connect(self.confirmation_win)
+        self.progressBar = ProgressBar(self, minimum=0, maximum=100, objectName="StyleProgressBar")
+        self.progressBar.setFixedHeight(40)
+
+        self.playButton = QPushButton("")
         self.playButton.setEnabled(False)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.playButton.clicked.connect(self.play)
@@ -52,72 +108,63 @@ class VideoWindow(QMainWindow):
         self.errorLabel = QLabel()
         self.errorLabel.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum)
 
-        # Create new action
-        openAction = QAction(QIcon('open.png'), '&Open', self)
-        openAction.setShortcut('Ctrl+O')
-        openAction.setStatusTip('Open movie')
-        openAction.triggered.connect(self.openFile)
-
-        # Create exit action
-        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(self.exitCall)
-
-        # Create menu bar and add action
-        menuBar = self.menuBar()
-        fileMenu = menuBar.addMenu('&File')
-        #fileMenu.addAction(newAction)
-        fileMenu.addAction(openAction)
-        fileMenu.addAction(exitAction)
+        self.label = QLabel("Filename")
+        self.label.setFixedHeight(40)
+        self.label.setObjectName("StyleLab")
 
         # Create a widget for window contents
         wid = QWidget(self)
         self.setCentralWidget(wid)
 
         # Create layouts to place inside widget
-        controlLayout = QHBoxLayout()
-        controlLayout.setContentsMargins(0, 0, 0, 0)
-        controlLayout.addWidget(self.playButton)
-        controlLayout.addWidget(self.positionSlider)
+        self.playerLayout = QHBoxLayout()
+        # self.playerLayout.setContentsMargins(2, 3, 1, 1)
+        # playerLayout.addWidget(openButton)
+        self.playerLayout.addWidget(self.playButton)
+        self.playerLayout.addWidget(self.positionSlider)
 
+        self.progressLayout = QHBoxLayout()
+        self.progressLayout.setContentsMargins(2, 10, 1, 1)
+        self.progressLayout.addWidget(self.processButton)
+        self.progressLayout.addWidget(self.progressBar)
+        
+        self.selectorLayout = QHBoxLayout()
+        self.selectorLayout.setContentsMargins(2, 10, 1, 1)
+        self.selectorLayout.addWidget(self.combo)
+        self.selectorLayout.addWidget(self.cropButton)
 
-
+        self.openLayout = QHBoxLayout()
+        self.openLayout.addWidget(self.openButton)
+        self.openLayout.addWidget(self.label)
+        
         layout = QVBoxLayout()
         layout.addWidget(videoWidget)
-        layout.addLayout(controlLayout)
-        layout.addWidget(self.errorLabel)
-        layout.addWidget(openButton)
-        layout.addWidget(cropButton)
-        layout.addWidget(self.combo)
+        layout.addLayout(self.playerLayout)
+        # layout.addWidget(self.errorLabel)
+        layout.addLayout(self.openLayout)
+        layout.addLayout(self.progressLayout)
+        layout.addLayout(self.selectorLayout)
 
         # Set widget to contain window contents
         wid.setLayout(layout)
 
         self.mediaPlayer.setVideoOutput(videoWidget)
+        self.mediaPlayer.currentMediaChanged.connect(self.info_success_win)
         self.mediaPlayer.stateChanged.connect(self.mediaStateChanged)
         self.mediaPlayer.durationChanged.connect(self.durationChanged)
         self.mediaPlayer.error.connect(self.handleError)
         self.mediaPlayer.positionChanged.connect(self.positionChanged)
 
     def crop(self):
-#            execfile('videoplayer.py')
+        #execfile('videoplayer.py')
         sys.exit(app.exec_())
 
     def openF(self):
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open Movie",
-                QDir.homePath())
+        fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
+                QDir.homePath(), 'Video Files (*.mp4 *.avi)')
 
         if fileName != '':
-            self.mediaPlayer.setMedia(
-                    QMediaContent(QUrl.fromLocalFile(fileName)))
-            self.playButton.setEnabled(True)
-
-    def openFile(self):
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open Movie",
-                QDir.homePath())
-
-        if fileName != '':
+            self.label.setText(fileName)
             self.mediaPlayer.setMedia(
                     QMediaContent(QUrl.fromLocalFile(fileName)))
             self.playButton.setEnabled(True)
@@ -152,9 +199,32 @@ class VideoWindow(QMainWindow):
         self.playButton.setEnabled(False)
         self.errorLabel.setText("Error: " + self.mediaPlayer.errorString())
 
+    def info_success_win(self): #Message box after success load the video
+        msg = QMessageBox()
+        msg.setWindowTitle("Info")
+        msg.setText("Load Video Sucess !")
+        msg.setIcon(QMessageBox.Information)
+        x = msg.exec_()
+    
+    def confirmation_win(self): 
+        msg = QMessageBox()
+        msg.setWindowTitle("Confirmation")
+        msg.setText("Are you sure to continue the process ?")
+        msg.setIcon(QMessageBox.Question)
+        msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        msg.button(msg.Ok).clicked.connect(self.sendtoNet)
+
+        x = msg.exec_()
+
+    def sendtoNet(self):
+        #Initiate the progress bar
+        #Starting the network
+        print(f"Send to the Network")
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setStyleSheet(Stylesheet)
     player = VideoWindow()
-    player.resize(640, 500)
+    player.resize(1000, 800)
     player.show()
     sys.exit(app.exec_())
