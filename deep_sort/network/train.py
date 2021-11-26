@@ -16,11 +16,12 @@ import warnings
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
-from model import CNN
+# from model import CNN
+from model_2 import Net
 
-params = {'batch_size': 32,
+params = {'batch_size': 8,
           'shuffle': True,
-          'num_workers': 6}
+          'num_workers': 8}
 
 def make_parser():
     parser = argparse.ArgumentParser("DS Network train parser")
@@ -119,6 +120,49 @@ def train(epoch):
 
     return sum_train_loss, train_err, acc
 
+def test(epoch):
+    global best_acc
+    model.eval()
+    test_loss = 0.
+    correct = 0
+    total = 0
+    start = time.time()
+    with torch.no_grad():
+        for idx, (inputs, labels) in enumerate(valloader):
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+
+            test_loss += loss.item()
+            correct += outputs.max(dim=1)[1].eq(labels).sum().item()
+            total += labels.size(0)
+        
+        print("Testing ...")
+        end = time.time()
+        print("[progress:{:.1f}%]time:{:.2f}s Loss:{:.5f} Correct:{}/{} Acc:{:.3f}%".format(
+                100.*(idx+1)/len(valloader), end-start, test_loss/len(valloader), correct, total, 100.*correct/total
+            ))
+
+    # saving checkpoint
+    acc = 100.*correct/total
+    if acc > best_acc:
+        best_acc = acc
+        print("Saving parameters to checkpoint/ckpt.t7")
+        checkpoint = {
+            'net_dict':model.state_dict(),
+            'acc':acc,
+            'epoch':epoch,
+        }
+        if not os.path.isdir('checkpoint'):
+            os.mkdir('checkpoint')
+        torch.save(checkpoint, './checkpoint/ckpt.t7')
+    
+    sum_test_loss=test_loss/len(valloader)
+    test_err=1.- correct/total
+    acc = 100.*correct/total
+
+    return sum_test_loss, test_err, acc
+
 # lr decay
 def lr_decay(optimizer):
     for params in optimizer.param_groups:
@@ -130,12 +174,12 @@ def save_model(checkpoint, acc, save_dir='checkpoint'):
     #Save ckpt, evaluate
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    filename = os.path.join(save_dir, "ckpt.pth")
+    filename = os.path.join(save_dir, "ckpt.t7")
     torch.save(checkpoint, filename)
     print(f"Checkpoint Saved on {filename}")
 
 # plot figure
-def draw_curve(epoch, train_loss, train_err): #test_loss, test_err
+def draw_curve(epoch, train_loss, train_err, test_loss, test_err): #test_loss, test_err
     x_epoch = []
     record = {'train_loss':[], 'train_err':[], 'test_loss':[], 'test_err':[]}
     fig = plt.figure()
@@ -144,14 +188,14 @@ def draw_curve(epoch, train_loss, train_err): #test_loss, test_err
     
     record['train_loss'].append(train_loss)
     record['train_err'].append(train_err)
-    # record['test_loss'].append(test_loss)
-    # record['test_err'].append(test_err)
+    record['test_loss'].append(test_loss)
+    record['test_err'].append(test_err)
 
     x_epoch.append(epoch)
     ax0.plot(x_epoch, record['train_loss'], 'bo-', label='train')
-    # ax0.plot(x_epoch, record['test_loss'], 'ro-', label='val')
+    ax0.plot(x_epoch, record['test_loss'], 'ro-', label='val')
     ax1.plot(x_epoch, record['train_err'], 'bo-', label='train')
-    # ax1.plot(x_epoch, record['test_err'], 'ro-', label='val')
+    ax1.plot(x_epoch, record['test_err'], 'ro-', label='val')
     if epoch == 0:
         ax0.legend()
         ax1.legend()
@@ -166,18 +210,19 @@ if __name__ == '__main__':
 
     # initiate_model, criterion, optimizer, res_epoch = before_train(args, num_classes, device)
     #Network definition 
-    model = CNN(num_classes=num_classes)
-    
+    model = Net(num_classes=num_classes)
+    best_acc=0.0
+
     if args.resume:
-        assert os.path.isfile("./checkpoint/ckpt.pth"), "Error: no checkpoint file found!"
-        print('Loading from checkpoint/ckpt.pth')
-        checkpoint = torch.load("./checkpoint/ckpt.pth")
+        assert os.path.isfile("./checkpoint/ckpt.t7"), "Error: no checkpoint file found!"
+        print('Loading from checkpoint/ckpt.t7')
+        checkpoint = torch.load("./checkpoint/ckpt.t7")
 
         print(f"\n Last Epoch {checkpoint['epoch']} | Accuracy: {checkpoint['acc']:.3f}%")
         
         net_dict = checkpoint['net_dict']
         model.load_state_dict(net_dict)
-        # best_acc = checkpoint['acc']
+        best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch'] # Need to be tested
     else:
         start_epoch = 0 # Need to be tested
@@ -191,16 +236,18 @@ if __name__ == '__main__':
     train_loss_ar=[]
     train_er_ar=[]
     acc_ar=[]
-    best_acc=0.0
+    
 
     for epoch in range(start_epoch, start_epoch+args.epoch):
         train_loss, train_err, acc = train(epoch)
+        # test_loss, test_err, acc = test(epoch)
         train_loss_ar.append(train_loss)
         train_er_ar.append(train_err)
         acc_ar.append(acc)
-        # draw_curve(epoch, train_loss, train_err)
+        # draw_curve(epoch, train_loss, train_err, test_loss, test_err)
+        # draw_curve(epoch, train_loss, train_err,)
         
-        if (epoch+1)%20==0: #Not sure using 20, but less than 20, still learning significantly
+        if (epoch+1)%10==0: #Not sure using 20, but less than 20, still learning significantly
             lr_decay(optimizer)
 
         if acc > best_acc:

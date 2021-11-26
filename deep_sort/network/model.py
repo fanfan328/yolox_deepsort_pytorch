@@ -42,8 +42,8 @@ class ResidualBlock(nn.Module):
             residual = self.downsample(x)
         return F.relu(residual.add(out),True)
 
-class CNN(nn.Module):
-    def __init__(self, num_classes=32673, reid=False): #Person only
+class CNN(nn.Module):#32673
+    def __init__(self, num_classes=751, reid=False): #Person only
         super(CNN, self).__init__()
         # torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None)
 

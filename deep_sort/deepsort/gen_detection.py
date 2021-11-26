@@ -6,7 +6,8 @@ from loguru import logger
 import sys
 sys.path.append('../deep_sort')
 
-from deep_sort.network.model import CNN
+# from deep_sort.network.model import CNN
+from deep_sort.network.model_2 import CNN
 
 class GetFeatures(object):
     def __init__(self, model_path, use_cuda=True):
@@ -39,7 +40,7 @@ class GetFeatures(object):
 
 if __name__ == '__main__':
     # img = cv2.imread("person_1.jpg")[:,:,(2,1,0)]
-    img = cv2.imread("person_1.jpg")
+    img = cv2.imread("Basket.png")
     out = GetFeatures("checkpoint/ckpt.pth")
     feature = out(img)
     print(feature.shape)

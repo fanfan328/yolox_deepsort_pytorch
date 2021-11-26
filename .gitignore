@@ -46,16 +46,3 @@ Thumbs.db
 # Byte-compiled / optimized / DLL files
 __pycache__/
 **/__pycache__
-deep_sort/__pycache__/__init__.cpython-38.pyc
-deep_sort/deepsort/__pycache__/__init__.cpython-38.pyc
-deep_sort/deepsort/__pycache__/detection.cpython-38.pyc
-deep_sort/deepsort/__pycache__/iou_matching.cpython-38.pyc
-deep_sort/deepsort/__pycache__/kalman_filter.cpython-38.pyc
-deep_sort/deepsort/__pycache__/linear_assignment.cpython-38.pyc
-deep_sort/deepsort/__pycache__/nms.cpython-38.pyc
-deep_sort/deepsort/__pycache__/nn_matching.cpython-38.pyc
-deep_sort/deepsort/__pycache__/track.cpython-38.pyc
-deep_sort/deepsort/__pycache__/tracker.cpython-38.pyc
-deep_sort/network/checkpoint/ckpt.pth
-deep_sort/network/checkpoint/ckpt.t7
-utils/__pycache__/visualize.cpython-38.pyc

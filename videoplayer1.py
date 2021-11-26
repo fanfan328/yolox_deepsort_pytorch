@@ -8,7 +8,9 @@ from random import randint
 
 import sys
 import os
-#import videoplayer
+from object_tracker import ObjectTracker
+# from final_app import ObjectTracker
+
 Stylesheet = '''
 #StyleProgressBar {
     text-align: center;
@@ -50,7 +52,10 @@ class ProgressBar(QProgressBar):
     def startCounting(self):
         if self.minimum() != self.maximum():
             self.timer = QTimer(self, timeout=self.onTimeout)
-            self.timer.start(randint(1, 3) * 1000)
+            # self.timer.start(randint(1, 3) * 1000)
+    
+    def setVal(self, data_in):
+        self.setValue(data_in)
 
 class VideoWindow(QMainWindow):
 
@@ -157,20 +162,20 @@ class VideoWindow(QMainWindow):
 
     def crop(self):
         #execfile('videoplayer.py')
-        sys.exit(app.exec_())
+        self.close()
 
     def openF(self):
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
+        self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
                 QDir.homePath(), 'Video Files (*.mp4 *.avi)')
 
-        if fileName != '':
-            self.label.setText(fileName)
+        if self.fileName != '':
+            self.label.setText(self.fileName)
             self.mediaPlayer.setMedia(
-                    QMediaContent(QUrl.fromLocalFile(fileName)))
+                    QMediaContent(QUrl.fromLocalFile(self.fileName)))
             self.playButton.setEnabled(True)
 
     def exitCall(self):
-        sys.exit(app.exec_())
+        self.close()
 
     def play(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -218,7 +223,24 @@ class VideoWindow(QMainWindow):
 
     def sendtoNet(self):
         #Initiate the progress bar
+        self.progressBar.setVal(0)
+
         #Starting the network
+        # tracker.tes()
+        if(self.fileName):
+            self.tracker = ObjectTracker()
+            list_id_person, out_video = self.tracker.track_video(self.fileName, self.progressBar)
+            if(self.progressBar.value()=='100'):
+                print("Adding item into Combobox")
+                print(list_id_person)
+                print(out_video)
+            else:
+                print("Failed to Process, Force Close")
+                sys.exit(self.close())
+            # self.progressBar.setVal(self.tracker.progress)
+            # if
+            
+        
         print(f"Send to the Network")
 
 if __name__ == '__main__':
@@ -228,3 +250,5 @@ if __name__ == '__main__':
     player.resize(1000, 800)
     player.show()
     sys.exit(app.exec_())
+
+    

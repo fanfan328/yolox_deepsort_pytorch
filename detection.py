@@ -44,7 +44,7 @@ class Predictor(object):
         self.model.load_state_dict(checkpoint["model"])
 
 
-    def detect(self, img, flag_vis=True, cls_conf=0.35): #can be change into another score
+    def detect(self, img, flag_vis=True, cls_conf=0.5): #can be change into another score
         img_info = {}
         if isinstance(img, str):
             img_info["file_name"] = os.path.basename(img)
@@ -78,7 +78,8 @@ class Predictor(object):
         img_info['cls_id'] = outputs[:, 6]
         img_info['box_nums'] = outputs.shape[0]
 
-        # print(f"Boxes = {info['boxes']} Scores = {info['scores']} Conf = {conf}")
+        # print(f"Boxes = {outputs[:, 0:4]/ratio}")
+
         if flag_vis:
             img_info['visual'] = vis(img_info['raw_img'], img_info['boxes'], img_info['scores'], img_info['cls_id'], cls_conf, COCO_CLASSES)
             logger.success("Inference Success")
@@ -87,7 +88,8 @@ class Predictor(object):
 
 if __name__=='__main__':
     detector = Predictor()
-    img = cv2.imread('YOLOX/assets/dog.jpg')
+    # img = cv2.imread('YOLOX/assets/dog.jpg')
+    img = cv2.imread('Basket.png')
     out = detector.detect(img)
     cv2.imshow('demo', out['visual'])
     cv2.waitKey(0)
