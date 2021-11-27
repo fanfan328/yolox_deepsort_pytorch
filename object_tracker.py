@@ -27,9 +27,6 @@ class ObjectTracker(object):
   def __init__(self):
     super(ObjectTracker, self).__init__()
 
-  def tes(self):
-    print(f"Ini masuk function")
-
   def tracking_deepsort(self, file, filter_class='person'):
     # From objectdetection
     info_obj = self.detector.detect(file, flag_vis=False)
@@ -107,7 +104,7 @@ class ObjectTracker(object):
         # cv2.imwrite(os.path.join(save_folder,'test/'+str(counter)+'.jpg'), frame) 
         vid_writer.write(frame)
         counter+=1
-        if counter%10==0 :
+        if counter%10==0 or counter==total:
           self.progress=counter/total*100
           print(f"Progress = {counter}/{total} - {counter/total*100:.2f}% - {time.time() - start_process_time:.2f}s")
           if(progressbar!='X'):
@@ -126,7 +123,7 @@ class ObjectTracker(object):
     #   vid_writer.write(frame_final[i])
 
     print(f"Total Processing = {time.time() - start_time:.2f}s")
-    return self.person_id_array, os.path.join(save_folder, save_path)
+    return self.person_id_array, save_path
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("YOLOX-Tracker Demo!")
@@ -137,5 +134,7 @@ if __name__ == '__main__':
     if os.path.isfile(args.path):
       print('Video Process')
       list_id_person, out_video = tracker.track_video(args.path)
+      print(list_id_person)
+      print(out_video)
     else:
       print('Nothing Process')

@@ -82,9 +82,9 @@ class VideoWindow(QMainWindow):
 
         self.combo = QComboBox()
         self.combo.setObjectName("StyleCombo")
-        self.combo.addItem("person1")
-        self.combo.addItem("person2")
-        self.combo.addItem("person3")
+        # self.combo.addItem("person1")
+        # self.combo.addItem("person2")
+        # self.combo.addItem("person3")
         self.combo.setFixedHeight(40)
         # cropButton.setFixedWidth(280)
 
@@ -211,6 +211,18 @@ class VideoWindow(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         x = msg.exec_()
     
+    def msg_box_win(self, type, text): #Message box after success load the video
+        msg = QMessageBox()
+        msg.setWindowTitle("Info")
+        msg.setText(text)
+        if(type=='Warn'):
+            msg.setIcon(QMessageBox.Warning)
+        elif(type=='Err'):
+            msg.setIcon(QMessageBox.Critical)
+        else:
+            msg.setIcon(QMessageBox.Information)
+        x = msg.exec_()
+
     def confirmation_win(self): 
         msg = QMessageBox()
         msg.setWindowTitle("Confirmation")
@@ -229,12 +241,23 @@ class VideoWindow(QMainWindow):
         # tracker.tes()
         if(self.fileName):
             self.tracker = ObjectTracker()
-            list_id_person, out_video = self.tracker.track_video(self.fileName, self.progressBar)
-            if(self.progressBar.value()=='100'):
+            tmp = self.fileName.split("/")
+            list_id_person, out_video = self.tracker.track_video(tmp[-1], self.progressBar)
+            if(self.progressBar.value()==100 or self.progressBar.value()=="100"):
                 print("Adding item into Combobox")
                 print(list_id_person)
                 print(out_video)
+                if(os.path.isfile(out_video)):
+                    self.mediaPlayer.setMedia(
+                        QMediaContent(QUrl.fromLocalFile(out_video)))
+                    self.playButton.setEnabled(True)
+                    for id_person in list_id_person:
+                        self.combo.addItem("Person "+str(id_person))
+                else:
+                    self.msg_box_win('Err',"Process Video Doesn't Exist, Please try to process the video.")
+                    print("Process Video Doesn't Exist, Please try to process the video.")
             else:
+                self.msg_box_win('Err',"Failed to Process data")
                 print("Failed to Process, Force Close")
                 sys.exit(self.close())
             # self.progressBar.setVal(self.tracker.progress)
