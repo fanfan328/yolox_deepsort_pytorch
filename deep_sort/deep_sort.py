@@ -28,7 +28,10 @@ class DeepSort(object):
         self.height, self.width = ori_img.shape[:2]
         # generate detections
         features = self._get_features(bbox_xywh, ori_img)
+        # print(f"XYWH {bbox_xywh.shape}")
+        # print(f"Features {features.shape}")
         bbox_tlwh = self._xywh_to_tlwh(bbox_xywh)
+        # print(f"TLWH {bbox_tlwh.shape}")
         detections = [Detection(bbox_tlwh[i], conf, features[i]) for i,conf in enumerate(confidences) if conf>self.min_confidence]
 
         # run on non-maximum supression
@@ -62,6 +65,7 @@ class DeepSort(object):
     """
     @staticmethod
     def _xywh_to_tlwh(bbox_xywh):
+        # print(bbox_xywh.shape)
         if isinstance(bbox_xywh, np.ndarray):
             bbox_tlwh = bbox_xywh.copy()
         elif isinstance(bbox_xywh, torch.Tensor):

@@ -35,6 +35,7 @@ class GetFeatures(object):
         with torch.no_grad():
             im_batch = im_batch.to(self.device)
             features = self.net(im_batch)
+            # print(f"Get Features From {len(im_batch)} Pic to {len(features)} - {features.shape}")
         return features.cpu().numpy()
 
 
