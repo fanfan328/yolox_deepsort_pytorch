@@ -39,7 +39,6 @@ class ObjectTracker(object):
         
         for (x1, y1, x2, y2), class_id, score  in zip(info_obj['boxes'],info_obj['cls_id'],info_obj['scores']):
             if filter_class and class_names[int(class_id)] not in filter_class:
-                print(class_names[int(class_id)])
                 continue
             bbox_xywh.append([int((x1+x2)/2), int((y1+y2)/2), x2-x1, y2-y1])
             scores.append(score)
