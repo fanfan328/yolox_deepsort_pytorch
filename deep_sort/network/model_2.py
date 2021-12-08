@@ -45,9 +45,9 @@ def make_layers(c_in,c_out,repeat_times, is_downsample=False):
             blocks += [BasicBlock(c_out,c_out),]
     return nn.Sequential(*blocks)
 
-class CNN(nn.Module):
+class Net(nn.Module):
     def __init__(self, num_classes=751 ,reid=False):
-        super(CNN,self).__init__()
+        super(Net,self).__init__()
         # 3 128 64
         self.conv = nn.Sequential(
             nn.Conv2d(3,64,3,stride=1,padding=1),
@@ -96,7 +96,7 @@ class CNN(nn.Module):
 
 
 if __name__ == '__main__':
-    net = CNN()
+    net = Net()
     x = torch.randn(4,3,128,64)
     y = net(x)
     # import ipdb; ipdb.set_trace()

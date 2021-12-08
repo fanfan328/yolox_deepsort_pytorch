@@ -12,7 +12,7 @@ __all__ = ['DeepSort']
 
 
 class DeepSort(object):
-    def __init__(self, model_path, max_dist=0.2, min_confidence=0.4, nms_max_overlap=0.8, max_iou_distance=0.7, max_age=70, n_init=3, nn_budget=100, use_cuda=True):
+    def __init__(self, model_path, num_classes, model=1, max_dist=0.2, min_confidence=0.4, nms_max_overlap=0.8, max_iou_distance=0.7, max_age=70, n_init=3, nn_budget=100, use_cuda=True):
         # Definition of Deepsort Param + Initiate Deepsort
         self.min_confidence = min_confidence
         self.nms_max_overlap = nms_max_overlap
@@ -21,7 +21,7 @@ class DeepSort(object):
         self.tracker = Tracker(metric, max_iou_distance=max_iou_distance, max_age=max_age, n_init=n_init)
 
         # To get the features from the image and feed through the detection on CNN
-        self.get_features = GetFeatures(model_path, use_cuda=use_cuda)
+        self.get_features = GetFeatures(model_path, num_classes, model, use_cuda=use_cuda)
         
 
     def update(self, bbox_xywh, confidences, ori_img):
