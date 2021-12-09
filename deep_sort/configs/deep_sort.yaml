@@ -1,5 +1,6 @@
 DEEPSORT:
-  REID_CKPT: "./deep_sort/network/checkpoint/ckpt.t7"
+#  REID_CKPT: "./deep_sort/network/checkpoint/ckpt.t7"
+  REID_CKPT: "./deep_sort/network/logs/model_2_best.pth.tar"
   MAX_DIST: 0.2
   MIN_CONFIDENCE: 0.3
   NMS_MAX_OVERLAP: 0.5

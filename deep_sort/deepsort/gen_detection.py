@@ -19,7 +19,8 @@ class GetFeatures(object):
         else:
             raise Exception(f"Model {model} does not exist!")
         self.device = "cuda" if torch.cuda.is_available() and use_cuda else "cpu"
-        state_dict = torch.load(model_path, map_location=lambda storage, loc: storage)['net_dict']
+        # state_dict = torch.load(model_path, map_location=lambda storage, loc: storage)['net_dict']
+        state_dict = torch.load(model_path)['state_dict']
         self.net.load_state_dict(state_dict, strict=True)
 
         logger.info("Loading weights from {}... Done!".format(model_path))

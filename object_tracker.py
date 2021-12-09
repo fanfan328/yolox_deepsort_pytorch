@@ -141,7 +141,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("YOLOX-Tracker Demo!")
     parser.add_argument('-p', "--path", type=str, help="choose a video")
     parser.add_argument('-m', "--model", type=int, default=1, help="model used")
-    parser.add_argument('-d', "--dataset", type=str, help="dataset")
+    parser.add_argument('-d', "--dataset", type=str, help="dataset", choices=['spacejam', 'pep', 'viprior'])
     args = parser.parse_args()
 
     num_classes = 751
@@ -149,6 +149,8 @@ if __name__ == '__main__':
         num_classes = 32673
     elif args.dataset == 'pep':
         num_classes = 1264
+    elif args.dataset == 'viprior':
+        num_classes = 436
 
     tracker = ObjectTracker()
     if os.path.isfile(args.path):

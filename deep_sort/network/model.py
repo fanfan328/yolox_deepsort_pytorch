@@ -109,7 +109,7 @@ class CNN(nn.Module):#32673
         )
 
     def forward(self, x):
-        out = self.conv(x)
+        out = self.conv(x.cuda())
         out = self.res4(out)
         out = self.res5(out) 
         out = self.res6(out)
