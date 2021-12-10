@@ -2,7 +2,7 @@
 import imutils, argparse, cv2
 from imutils.video import count_frames
 import time
-import loguru as logger
+import skvideo.io
 import os
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -183,15 +183,12 @@ class ObjectTracker(object):
             box[4] = height
         return box
 
-    def crop(self, frame, box):
-        return frame[box[1]:box[3], box[2]:box[4]]
-
     def crop_vid(self, id):
         boxes = self.id_boxes[id]
         boxes, x_max, y_max = self.add_center(boxes)
 
         y_rad = int(y_max * 1.5)
-        x_rad = int(y_rad * 4 / 3)
+        x_rad = int(y_rad * 3 / 4)
 
         for box in boxes:
             box[1] = box[5] - x_rad
@@ -204,7 +201,6 @@ class ObjectTracker(object):
         cap = cv2.VideoCapture(self.v_path)
         width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
         height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
-        fps = cap.get(cv2.CAP_PROP_FPS)
 
         # count the total number of frames in the video file
         total = count_frames(self.v_path, override=False)
@@ -213,11 +209,11 @@ class ObjectTracker(object):
         # Declare the output path and file
         save_folder = os.path.abspath(os.getcwd())
         os.makedirs(save_folder, exist_ok=True)
-        save_path = os.path.join(save_folder, "OUT_cropped_" + str(id) + "_" + self.v_path.rsplit('/', 1)[1])
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        vid_writer = cv2.VideoWriter(
-            save_path, fourcc, fps, (int(x_rad * 2), int(y_rad * 2))
-        )
+        save_path = os.path.join(save_folder,
+                                 "OUT_cropped_" + str(id) + "_" + self.v_path.rsplit('/', 1)[1].rsplit('.', 1)[
+                                     0] + '.mp4')
+        out_video = np.empty([len(boxes), x_rad * 2, y_rad * 2, 3], dtype=np.uint8)
+        out_video = out_video.astype(np.uint8)
 
         i = 0
         self.counter = 0
@@ -230,14 +226,17 @@ class ObjectTracker(object):
 
             self.counter += 1
             if i == len(boxes):
-                vid_writer.release()
+                # vid_writer.release()
+                skvideo.io.vwrite(save_path, out_video)
                 cap.release()
                 cv2.destroyAllWindows()
                 continue
             if boxes[i][0] == self.counter:
-                boxes[i] = self.fix_boxes(boxes[i], width, height)
-                n_frame = self.crop(frame, boxes[i])
-                vid_writer.write(n_frame)
+                box = self.fix_boxes(boxes[i], width, height)
+                n_frame = frame[box[1]:box[3], box[2]:box[4]]
+                # n_frame = cv2.resize(n_frame, [1920, 1080], interpolation=cv2.INTER_NEAREST)
+                cv2.imwrite(f'./img/nframe_{i}.jpg', n_frame)
+                out_video[i] = cv2.cvtColor(n_frame, cv2.COLOR_BGR2RGB)
                 i += 1
             elif boxes[i][0] < self.counter:
                 raise Exception('Why is i is smaller than counter?')
