@@ -269,7 +269,7 @@ class VideoWindow(QMainWindow):
             tmp = self.fileName.split("/")
             list_id_person, out_video = self.tracker.track_video(tmp[-1], 2, 751, self.progressBar)
             if(self.progressBar.value()==100 or self.progressBar.value()=="100" or len(list_id_person)>1):
-                self.progressbar.setVal(100)
+                self.progressBar.setVal(100)
                 # print("Adding item into Combobox")
                 # print(list_id_person)
                 # print(out_video)

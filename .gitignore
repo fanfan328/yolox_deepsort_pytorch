@@ -41,6 +41,8 @@ Thumbs.db
 *.pth
 *.mp4
 *.jpg
+*.jpeg
+*.png
 *.pyc
 
 # Byte-compiled / optimized / DLL files

@@ -182,52 +182,6 @@ def train(epoch, model, optimizer, criterion, train_loader, device):
 
     return sum_train_loss, train_err, acc
 
-
-def test(epoch):
-    global best_acc
-    model.eval()
-    test_loss = 0.
-    correct = 0
-    total = 0
-    start = time.time()
-    with torch.no_grad():
-        for idx, (inputs, labels) in enumerate(valloader):
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-
-            test_loss += loss.item()
-            correct += outputs.max(dim=1)[1].eq(labels).sum().item()
-            total += labels.size(0)
-
-        print("Testing ...")
-        end = time.time()
-        print("[progress:{:.1f}%]time:{:.2f}s Loss:{:.5f} Correct:{}/{} Acc:{:.3f}%".format(
-            100. * (idx + 1) / len(valloader), end - start, test_loss / len(valloader), correct, total,
-            100. * correct / total
-        ))
-
-    # saving checkpoint
-    acc = 100. * correct / total
-    if acc > best_acc:
-        best_acc = acc
-        print("Saving parameters to checkpoint/ckpt.t7")
-        checkpoint = {
-            'net_dict': model.state_dict(),
-            'acc': acc,
-            'epoch': epoch,
-        }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(checkpoint, 'checkpoint/labeled_pedestrian.t7')
-
-    sum_test_loss = test_loss / len(valloader)
-    test_err = 1. - correct / total
-    acc = 100. * correct / total
-
-    return sum_test_loss, test_err, acc
-
-
 # lr decay
 def lr_decay(optimizer):
     for params in optimizer.param_groups:
@@ -288,9 +242,9 @@ def main(args, params):
     # Load Model
     start_epoch = best_top1 = 0
     if args.resume:
-        checkpoint = load_checkpoint()
-        model.load_state_dict(checkpoint['net_dict'])
-        best_top1 = checkpoint['acc']
+        checkpoint = load_checkpoint(osp.join(args.logs_dir, f'model_{args.model}_best.pth.tar'))
+        model.load_state_dict(checkpoint['state_dict'])
+        best_top1 = checkpoint['best_top1']
         start_epoch = checkpoint['epoch']  # Need to be tested
     device = check_device()
     model.to(device)
@@ -345,7 +299,7 @@ def main(args, params):
                                            epoch)
             writer.add_scalar('Test/Top1_avg', top1, epoch)
         else:
-            train(epoch, model, optimizer, criterion, train_loader, device)
+            sum_train_loss, train_err, top1 = train(epoch, model, optimizer, criterion, train_loader, device)
 
         # if (epoch + 1) % 10 == 0:  # Not sure using 20, but less than 20, still learning significantly
         #     lr_decay(optimizer)
@@ -359,16 +313,16 @@ def main(args, params):
         }, is_best, model_name=args.model, fpath=osp.join(args.logs_dir, f'ckpt_model_{args.model}.pth.tar'))
 
     # Final test
-    print('Test with best model:')
-    checkpoint = load_checkpoint(osp.join(args.logs_dir, f'model_{args.model}_best.pth.tar'))
-    model.load_state_dict(checkpoint['state_dict'])
-    metric.train(model, train_loader)
-    dist_matrix = evaluator.evaluate(test_loader,
-                                     dataset.query_test,
-                                     dataset.gallery_test,
-                                     metric)
-    write_mat_csv(osp.join(args.logs_dir, 'distance_matrix.csv'),
-                  dist_matrix, dataset.query_test, dataset.gallery_test)
+    # print('Test with best model:')
+    # checkpoint = load_checkpoint(osp.join(args.logs_dir, f'model_{args.model}_best.pth.tar'))
+    # model.load_state_dict(checkpoint['state_dict'])
+    # metric.train(model, train_loader)
+    # dist_matrix = evaluator.evaluate(test_loader,
+    #                                  dataset.query_test,
+    #                                  dataset.gallery_test,
+    #                                  metric)
+    # write_mat_csv(osp.join(args.logs_dir, 'distance_matrix.csv'),
+    #               dist_matrix, dataset.query_test, dataset.gallery_test)
 
     # if acc > best_acc:
     #     best_acc = acc
