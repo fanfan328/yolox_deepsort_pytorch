@@ -3,7 +3,7 @@ import imutils, argparse, cv2
 from imutils.video import count_frames
 import time
 import skvideo
-skvideo.setFFmpegPath('C:/ffmpeg/bin')
+# skvideo.setFFmpegPath('C:/ffmpeg/bin')
 import skvideo.io
 # print("FFmpeg version: {}".format(skvideo.getFFmpegVersion()))
 
@@ -113,8 +113,8 @@ class ObjectTracker(object):
         # Declare the output path and file
         save_folder = os.path.abspath(os.getcwd())
         os.makedirs(save_folder, exist_ok=True)
-        # save_path = os.path.join(save_folder, "OUT_" + file.rsplit('/', 1)[1])
-        save_path = os.path.join(save_folder, "OUT_" + file)
+        save_path = os.path.join(save_folder, "OUT_" + file.rsplit('/', 1)[1])
+        # save_path = os.path.join(save_folder, "OUT_" + file)
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
         vid_writer = cv2.VideoWriter(
             save_path, fourcc, fps, (int(width), int(height))
@@ -168,41 +168,45 @@ class ObjectTracker(object):
         for box in boxes:
             x_dis = (box[3] - box[1]) / 2
             y_dis = (box[4] - box[2]) / 2
-            x_center = int(x_dis + box[1])
-            y_center = int(y_dis + box[2])
+            x_center = int(box[1] + x_dis)
+            y_center = int(box[2] + y_dis)
             x_max = x_dis if x_dis > x_max else x_max
             y_max = y_dis if y_dis > y_max else y_max
             box.extend([x_center, y_center])
         return boxes, x_max, y_max
 
     def fix_boxes(self, box, width, height):
-        if box[1] < 0:
-            box[3] = box[3] - box[1]
-            box[1] = 0
-        elif box[3] >= width:
-            box[1] -= box[3] - width
-            box[3] = width
+        if box[7] < 0:
+            box[8] = int(box[8] - box[7])
+            box[7] = 0
+        elif box[8] >= width:
+            box[7] -= int(box[8] - width)
+            box[8] = int(width)
 
-        if box[2] < 0:
-            box[4] = box[4] - box[2]
-            box[2] = 0
-        elif box[4] >= height:
-            box[2] -= box[4] - height
-            box[4] = height
+        if box[9] < 0:
+            box[10] = box[10] - box[9]
+            box[9] = 0
+        elif box[10] >= height:
+            box[9] -= int(box[10] - height)
+            box[10] = int(height)
         return box
 
     def crop_vid(self, id):
-        boxes = self.id_boxes[id]
+        boxes = self.id_boxes[1]
         boxes, x_max, y_max = self.add_center(boxes)
 
-        y_rad = int(y_max * 1.5)
-        x_rad = int(y_rad * 3 / 4)
+        if y_max > x_max:
+            y_rad = int(y_max * 1.1)
+            x_rad = int(y_rad * 3 / 4)
+        else:
+            x_rad = int(x_max * 1.1)
+            y_rad = int(x_rad * 4 / 3)
 
         for box in boxes:
-            box[1] = box[5] - x_rad
-            box[3] = box[5] + x_rad
-            box[2] = box[6] - y_rad
-            box[4] = box[6] + y_rad
+            box.append(box[5] - x_rad)
+            box.append(box[5] + x_rad)
+            box.append(box[6] - y_rad)
+            box.append(box[6] + y_rad)
 
         # prepare frames
         # Initiate the input file (Breakdown from the video into single frame)
@@ -219,7 +223,7 @@ class ObjectTracker(object):
         os.makedirs(save_folder, exist_ok=True)
         # save_path = os.path.join(save_folder,"OUT_cropped_" + str(id) + "_" + self.v_path.rsplit('/', 1)[1].rsplit('.', 1)[0] + '.mp4')
         save_path = os.path.join(save_folder,"OUT_cropped_" + str(id) + "_" + self.v_path + '.mp4')
-        out_video = np.empty([len(boxes), x_rad * 2, y_rad * 2, 3], dtype=np.uint8)
+        out_video = np.empty([len(boxes), y_rad * 2, x_rad * 2, 3], dtype=np.uint8)
         out_video = out_video.astype(np.uint8)
 
         i = 0
@@ -240,9 +244,7 @@ class ObjectTracker(object):
                 continue
             if boxes[i][0] == self.counter:
                 box = self.fix_boxes(boxes[i], width, height)
-                n_frame = frame[int(box[1]):int(box[3]), int(box[2]):int(box[4])]
-                # n_frame = cv2.resize(n_frame, [1920, 1080], interpolation=cv2.INTER_NEAREST)
-                cv2.imwrite(f'./img/nframe_{i}.jpg', n_frame)
+                n_frame = frame[box[9]:box[10], box[7]:box[8]]
                 out_video[i] = cv2.cvtColor(n_frame, cv2.COLOR_BGR2RGB)
                 i += 1
             elif boxes[i][0] < self.counter:
@@ -257,7 +259,7 @@ class ObjectTracker(object):
             ch = cv2.waitKey(1)
             if ch == 27 or ch == ord("q") or ch == ord("Q"):
                 break
-        
+
         return save_path
 
 
@@ -265,7 +267,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("YOLOX-Tracker Demo!")
     parser.add_argument('-p', "--path", type=str, help="choose a video")
     parser.add_argument('-m', "--model", type=int, default=1, help="model used")
-    parser.add_argument('-d', "--dataset", type=str, help="dataset", choices=['spacejam', 'pep', 'viprior'])
+    parser.add_argument('-d', "--dataset", type=str, help="dataset",
+                        choices=['spacejam', 'pep', 'viprior', 'market1501'])
     args = parser.parse_args()
 
     num_classes = 751
