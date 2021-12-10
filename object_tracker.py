@@ -213,7 +213,7 @@ class ObjectTracker(object):
         # Declare the output path and file
         save_folder = os.path.abspath(os.getcwd())
         os.makedirs(save_folder, exist_ok=True)
-        save_path = os.path.join(save_folder, "OUT_" + self.v_path.rsplit('/', 1)[1] + '_cropped_' + str(id))
+        save_path = os.path.join(save_folder, "OUT_cropped_" + str(id) + "_" + self.v_path.rsplit('/', 1)[1])
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
         vid_writer = cv2.VideoWriter(
             save_path, fourcc, fps, (int(x_rad * 2), int(y_rad * 2))
@@ -251,7 +251,6 @@ class ObjectTracker(object):
             ch = cv2.waitKey(1)
             if ch == 27 or ch == ord("q") or ch == ord("Q"):
                 break
-
 
 
 if __name__ == '__main__':
