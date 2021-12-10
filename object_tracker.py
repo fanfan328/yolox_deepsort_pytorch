@@ -28,9 +28,25 @@ class_names = COCO_CLASSES
 class ObjectTracker(object):
     def __init__(self):
         super(ObjectTracker, self).__init__()
+        self.id_boxes = {}
 
     def tes(self):
         print(f"Ini masuk function")
+
+    def memo_bbox(self, boxes):
+        for i in range(len(boxes)):
+            box = boxes[i]
+
+            x0 = int(box[0])
+            y0 = int(box[1])
+            x1 = int(box[2])
+            y1 = int(box[3])
+            id = int(box[4])
+
+            if id in self.id_boxes.keys():
+                self.id_boxes[id].append([self.counter, x0, y0, x1, y1])
+            else:
+                self.id_boxes[id] = [[self.counter, x0, y0, x1, y1]]
 
     def tracking_deepsort(self, file, filter_class='person'):
         # From objectdetection
@@ -55,10 +71,12 @@ class ObjectTracker(object):
                 image, self.person_id_array = vis_track(file, outputs, scores, self.person_id_array)
             else:
                 image = file
+        self.memo_bbox(outputs)
 
         return image, outputs
 
     def track_video(self, args, num_classes, progressbar='X', model='yolox-s', ckpt='yolox_s.pth'):
+        self.v_path = args.path
         file = args.path
         model_type = args.model
 
@@ -96,7 +114,7 @@ class ObjectTracker(object):
         # print(f"Detail Video = {fps} - {width}-{height}")
 
         # Start Processing the video (Breakingdown into frames)
-        counter = 0
+        self.counter = 0
         start_time = time.time()
         start_process_time = time.time()
 
@@ -108,16 +126,16 @@ class ObjectTracker(object):
 
             # Process Tracker
             # frame = imutils.resize(frame, height=500)
+            self.counter += 1
             frame, _ = self.tracking_deepsort(frame)
 
             # cv2.imshow('show', frame)
             # cv2.imwrite(os.path.join(save_folder,'test/'+str(counter)+'.jpg'), frame)
             vid_writer.write(frame)
-            counter += 1
-            if counter % 10 == 0:
-                self.progress = counter / total * 100
+            if self.counter % 10 == 0:
+                self.progress = self.counter / total * 100
                 print(
-                    f"Progress = {counter}/{total} - {counter / total * 100:.2f}% - {time.time() - start_process_time:.2f}s")
+                    f"Progress = {self.counter}/{total} - {self.counter / total * 100:.2f}% - {time.time() - start_process_time:.2f}s")
                 if (progressbar != 'X'):
                     progressbar.setVal(int(self.progress))
                 start_process_time = time.time()
@@ -135,6 +153,105 @@ class ObjectTracker(object):
 
         print(f"Total Processing = {time.time() - start_time:.2f}s")
         return self.person_id_array, save_path
+
+    def add_center(self, boxes):
+        # centerized_boxes = []
+        x_max = y_max = 0
+        for box in boxes:
+            x_dis = (box[3] - box[1]) / 2
+            y_dis = (box[4] - box[2]) / 2
+            x_center = int(x_dis + box[1])
+            y_center = int(y_dis + box[2])
+            x_max = x_dis if x_dis > x_max else x_max
+            y_max = y_dis if y_dis > y_max else y_max
+            box.extend([x_center, y_center])
+        return boxes, x_max, y_max
+
+    def fix_boxes(self, box, width, height):
+        if box[1] < 0:
+            box[3] = box[3] - box[1]
+            box[1] = 0
+        elif box[3] >= width:
+            box[1] -= box[3] - width
+            box[3] = width
+
+        if box[2] < 0:
+            box[4] = box[4] - box[2]
+            box[2] = 0
+        elif box[4] >= height:
+            box[2] -= box[4] - height
+            box[4] = height
+        return box
+
+    def crop(self, frame, box):
+        return frame[box[1]:box[3], box[2]:box[4]]
+
+    def crop_vid(self, id):
+        boxes = self.id_boxes[id]
+        boxes, x_max, y_max = self.add_center(boxes)
+
+        y_rad = int(y_max * 1.5)
+        x_rad = int(y_rad * 4 / 3)
+
+        for box in boxes:
+            box[1] = box[5] - x_rad
+            box[3] = box[5] + x_rad
+            box[2] = box[6] - y_rad
+            box[4] = box[6] + y_rad
+
+        # prepare frames
+        # Initiate the input file (Breakdown from the video into single frame)
+        cap = cv2.VideoCapture(self.v_path)
+        width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
+        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
+        fps = cap.get(cv2.CAP_PROP_FPS)
+
+        # count the total number of frames in the video file
+        total = count_frames(self.v_path, override=False)
+        print("[INFO] {:,} total frames read from {}".format(total, self.v_path[self.v_path.rfind(os.path.sep) + 1:]))
+
+        # Declare the output path and file
+        save_folder = os.path.abspath(os.getcwd())
+        os.makedirs(save_folder, exist_ok=True)
+        save_path = os.path.join(save_folder, "OUT_" + self.v_path.rsplit('/', 1)[1] + '_cropped_' + str(id))
+        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+        vid_writer = cv2.VideoWriter(
+            save_path, fourcc, fps, (int(x_rad * 2), int(y_rad * 2))
+        )
+
+        i = 0
+        self.counter = 0
+        self.progress = 0.0
+        start_process_time = time.time()
+        while True:
+            _, frame = cap.read()
+            if frame is None:
+                break
+
+            self.counter += 1
+            if i == len(boxes):
+                vid_writer.release()
+                cap.release()
+                cv2.destroyAllWindows()
+                continue
+            if boxes[i][0] == self.counter:
+                boxes[i] = self.fix_boxes(boxes[i], width, height)
+                n_frame = self.crop(frame, boxes[i])
+                vid_writer.write(n_frame)
+                i += 1
+            elif boxes[i][0] < self.counter:
+                raise Exception('Why is i is smaller than counter?')
+
+            if self.counter % 10 == 0:
+                self.progress = self.counter / total * 100
+                print(
+                    f"Progress = {self.counter}/{total} - {self.counter / total * 100:.2f}% - {time.time() - start_process_time:.2f}s")
+                start_process_time = time.time()
+
+            ch = cv2.waitKey(1)
+            if ch == 27 or ch == ord("q") or ch == ord("Q"):
+                break
+
 
 
 if __name__ == '__main__':
@@ -156,5 +273,6 @@ if __name__ == '__main__':
     if os.path.isfile(args.path):
         print('Video Process')
         list_id_person, out_video = tracker.track_video(args, num_classes)
+        tracker.crop_vid(10)
     else:
         print('Nothing Process')
