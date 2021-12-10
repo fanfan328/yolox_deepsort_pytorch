@@ -78,7 +78,7 @@ class VideoWindow(QMainWindow):
         self.cropButton.setObjectName("StyleBtn")
         self.cropButton.setFixedHeight(40)
         self.cropButton.setFixedWidth(280)
-        self.cropButton.clicked.connect(self.crop)
+        self.cropButton.clicked.connect(self.confirmation_win_cropping)
 
         self.combo = QComboBox()
         self.combo.setObjectName("StyleCombo")
@@ -161,8 +161,33 @@ class VideoWindow(QMainWindow):
         self.mediaPlayer.positionChanged.connect(self.positionChanged)
 
     def crop(self):
+        text = str(self.combo.currentText())
+        id= text.split(" ")[-1]
+        if id.isnumeric():
+            print(f"Target ID = {int(id)}")
+            cropped_video_path = self.tracker.crop_vid(int(id))
+            if(os.path.isfile(cropped_video_path)):
+                self.mediaPlayer.setMedia(
+                    QMediaContent(QUrl.fromLocalFile(cropped_video_path)))
+                self.playButton.setEnabled(True)
+            else:
+                self.msg_box_win('Err',"Cropping Video Error, Please try to process the video.")
+                print("Cropping Video Error, Please try to process the video")
+        else:
+            self.msg_box_win('Err',"ID Is not found. Please Repeat the Video Processing.")
         #execfile('videoplayer.py')
-        self.close()
+        # self.close()
+
+    def confirmation_win_cropping(self): 
+        msg = QMessageBox()
+        msg.setWindowTitle("Confirmation")
+        msg.setText("Are you sure to continue the process ?")
+        msg.setIcon(QMessageBox.Question)
+        msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        msg.button(msg.Ok).clicked.connect(self.crop)
+
+        x = msg.exec_()
+        
 
     def openF(self):
         self.fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
@@ -242,11 +267,12 @@ class VideoWindow(QMainWindow):
         if(self.fileName):
             self.tracker = ObjectTracker()
             tmp = self.fileName.split("/")
-            list_id_person, out_video = self.tracker.track_video(tmp[-1], self.progressBar)
-            if(self.progressBar.value()==100 or self.progressBar.value()=="100"):
-                print("Adding item into Combobox")
-                print(list_id_person)
-                print(out_video)
+            list_id_person, out_video = self.tracker.track_video(tmp[-1], 2, 751, self.progressBar)
+            if(self.progressBar.value()==100 or self.progressBar.value()=="100" or len(list_id_person)>1):
+                self.progressbar.setVal(100)
+                # print("Adding item into Combobox")
+                # print(list_id_person)
+                # print(out_video)
                 if(os.path.isfile(out_video)):
                     self.mediaPlayer.setMedia(
                         QMediaContent(QUrl.fromLocalFile(out_video)))
@@ -257,6 +283,7 @@ class VideoWindow(QMainWindow):
                     self.msg_box_win('Err',"Process Video Doesn't Exist, Please try to process the video.")
                     print("Process Video Doesn't Exist, Please try to process the video.")
             else:
+                print(self.progressBar.value())
                 self.msg_box_win('Err',"Failed to Process data")
                 print("Failed to Process, Force Close")
                 sys.exit(self.close())

@@ -2,7 +2,11 @@
 import imutils, argparse, cv2
 from imutils.video import count_frames
 import time
+import skvideo
+skvideo.setFFmpegPath('C:/ffmpeg/bin')
 import skvideo.io
+# print("FFmpeg version: {}".format(skvideo.getFFmpegVersion()))
+
 import os
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -75,10 +79,13 @@ class ObjectTracker(object):
 
         return image, outputs
 
-    def track_video(self, args, num_classes, progressbar='X', model='yolox-s', ckpt='yolox_s.pth'):
-        self.v_path = args.path
-        file = args.path
-        model_type = args.model
+    def track_video(self, path, model_num=2, num_classes=751, progressbar='X', model='yolox-s', ckpt='yolox_s.pth'):
+        # self.v_path = args.path
+        # file = args.path
+        # model_type = args.model
+        self.v_path = path
+        file = path
+        model_type = model_num
 
         # Initiate Predictor and DeepSort
         self.detector = Predictor(model, ckpt)
@@ -106,7 +113,8 @@ class ObjectTracker(object):
         # Declare the output path and file
         save_folder = os.path.abspath(os.getcwd())
         os.makedirs(save_folder, exist_ok=True)
-        save_path = os.path.join(save_folder, "OUT_" + file.rsplit('/', 1)[1])
+        # save_path = os.path.join(save_folder, "OUT_" + file.rsplit('/', 1)[1])
+        save_path = os.path.join(save_folder, "OUT_" + file)
         fourcc = cv2.VideoWriter_fourcc(*'MP4V')
         vid_writer = cv2.VideoWriter(
             save_path, fourcc, fps, (int(width), int(height))
@@ -209,9 +217,8 @@ class ObjectTracker(object):
         # Declare the output path and file
         save_folder = os.path.abspath(os.getcwd())
         os.makedirs(save_folder, exist_ok=True)
-        save_path = os.path.join(save_folder,
-                                 "OUT_cropped_" + str(id) + "_" + self.v_path.rsplit('/', 1)[1].rsplit('.', 1)[
-                                     0] + '.mp4')
+        # save_path = os.path.join(save_folder,"OUT_cropped_" + str(id) + "_" + self.v_path.rsplit('/', 1)[1].rsplit('.', 1)[0] + '.mp4')
+        save_path = os.path.join(save_folder,"OUT_cropped_" + str(id) + "_" + self.v_path + '.mp4')
         out_video = np.empty([len(boxes), x_rad * 2, y_rad * 2, 3], dtype=np.uint8)
         out_video = out_video.astype(np.uint8)
 
@@ -233,7 +240,7 @@ class ObjectTracker(object):
                 continue
             if boxes[i][0] == self.counter:
                 box = self.fix_boxes(boxes[i], width, height)
-                n_frame = frame[box[1]:box[3], box[2]:box[4]]
+                n_frame = frame[int(box[1]):int(box[3]), int(box[2]):int(box[4])]
                 # n_frame = cv2.resize(n_frame, [1920, 1080], interpolation=cv2.INTER_NEAREST)
                 cv2.imwrite(f'./img/nframe_{i}.jpg', n_frame)
                 out_video[i] = cv2.cvtColor(n_frame, cv2.COLOR_BGR2RGB)
@@ -250,6 +257,8 @@ class ObjectTracker(object):
             ch = cv2.waitKey(1)
             if ch == 27 or ch == ord("q") or ch == ord("Q"):
                 break
+        
+        return save_path
 
 
 if __name__ == '__main__':
@@ -270,7 +279,7 @@ if __name__ == '__main__':
     tracker = ObjectTracker()
     if os.path.isfile(args.path):
         print('Video Process')
-        list_id_person, out_video = tracker.track_video(args, num_classes)
-        tracker.crop_vid(10)
+        list_id_person, out_video = tracker.track_video(args.path, args.model, num_classes)
+        tracker.crop_vid(1)
     else:
         print('Nothing Process')
