@@ -11,7 +11,7 @@ Installation
   * If you forget to use the command above, you can run this command `git submodule update --init`
   
  2. Make sure that you fulfill all the requirements: 
-    ```bash
+   ```bash
    pip install -r requirements.txt
    ```
    
